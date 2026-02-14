@@ -7,6 +7,41 @@ Custom datatype definitions
 import os
 import sys
 
+class APConfigurationProfile(object):
+    """ Represents a specific access point configuration
+    """
+
+    def __init__(self, name, config=None, logger=None):
+        """ Initialize the object
+        """
+        self.config = config
+        self.logger = logger
+        self.name = name
+        if self.config:
+            self.hostapd_config_file_handler = HostapdConfigurationFileHandler(config=self.config, logger=self.logger)
+
+    def get_config(self):
+        """ Return the profile's configuration settings
+        """
+        return self.config
+
+    def write_config(self):
+        """ Write the configuration settings of the profile to the hostapd configuration file
+        """
+        hostapd_config_file = self.hostapd_config_file_handler.generate_hostapd_config_file()
+        return hostapd_config_file
+
+    def import_config(self, infile):
+        """ Import a configuration from a file
+        """
+        pass
+
+    def export_config(self, outfile):
+        """ Export the configuration to a file
+        """
+        pass
+
+
 class HostapdConfigurationFileHandler(object):
     """ Contains methods for dynamically generating the configuration
     file for hostapd
@@ -96,3 +131,159 @@ class HostapdConfigurationFileHandler(object):
         if not os.path.isfile(self.config["AP"]["hostapd_config_file"]):
             raise Exception(f"Error writing hostapd configuration file to disk! File not found on filesystem!")
         return self.config["AP"]["hostapd_config_file"]
+
+class APHost(object):
+    """ Access point host
+    """
+
+    def __init__(self, config=None, logger=None):
+        """ Initialize the object
+        """
+        self.config = config
+        self.logger = logger
+        self._state = "not running"
+        self._interface = self.config["AP"]["broadcast_iface"]
+        self._essid = self.config["AP"]["essid"]
+        self._band = self.config["AP"]["band"]
+        self._channel = self.config["AP"]["channel"]
+        self._security = self.config["AP"]["security"]
+        self._passphrase = self.config["AP"]["passphrase"]
+        self.hostapd_process = None
+        self.configuration_profiles = []
+
+    def _write_hostapd_config(self):
+        """ Write the hostapd configuration file
+        """
+        hostapd_config_file_handler = datatypes.HostapdConfigurationFileHandler(config=self.config, logger=self.logger)
+        hostapd_config_file = hostapd_config_file_handler.generate_hostapd_config_file()
+        return hostapd_config_file
+
+    def _start_ap_host(self):
+        """ Start the hostapd process
+        """
+        hostapd_config_file = self._write_hostapd_config()
+        self.hostapd_process = subprocess.Popen(
+            [self.config["AP"]["hostapd_executable"], hostapd_config_file],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        self.state = "running"
+        return None
+
+    def _stop_ap_host(self):
+        """ Stop the hostapd process
+        """
+        self.hostapd_process.terminate()
+        try:
+            self.hostapd_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.hostapd_process.kill()
+            self.hostapd_process.wait()
+        self.state = "not running"
+        return None
+
+    def _restart_ap_host(self):
+        """ Restart the hostapd process
+        """
+        self._stop_ap_host()
+        self._start_ap_host()
+        return None
+
+    def start(self):
+        """ Start the AP host
+        """
+        if self._state == "running":
+            raise exceptions.StateChangeError(f"AP host is already started!")
+        try:
+            self._start_ap_host()
+        except Exception as err_msg:
+            raise exceptions.StateChangeError(f"Encountered an exception when trying to start the AP host! Error message: {err_msg}")
+        return None
+
+    def stop(self):
+        """ Stop the AP host
+        """
+        if self._state == "not running":
+            raise exceptions.StateChangeError(f"AP host is already stopped!")
+        try:
+            self._stop_ap_host()
+        except Exception as err_msg:
+            raise exceptions.StateChangeError(f"Encountered an exception when trying to stop the AP host! Error message: {err_msg}")
+        return None
+
+    def restart(self):
+        """ Stop then start the AP host
+        """
+        if self._state == "not_running":
+            raise exceptions.StateChangeError(f"AP host has not been started!")
+        try:
+            self._restart_ap_host()
+        except Exception as err_msg:
+            raise exceptions.StateChangeError(f"Encountered an exception when trying to restart the AP host! Error message: {err_msg}")
+        return None
+
+    def configure(self, setting, value):
+        """ Change the value of a configuration setting
+        """
+        old_value = self.config["AP"][setting]
+        if setting == "broadcast_iface":
+            self.config["AP"]["broadcast_iface"] = value
+            self._interface = self.config["AP"]["broadcast_iface"]
+        elif setting == "driver":
+            self.config["AP"]["driver"] = value
+        elif setting == "essid":
+            self.config["AP"]["essid"] = value
+            self._essid = self.config["AP"]["essid"]
+        elif setting == "band":
+            self.config["AP"]["band"] = value
+            self._band = self.config["AP"]["band"]
+        elif setting == "channel":
+            self.config["AP"]["channel"] = value
+            self._channel = self.config["AP"]["channel"]
+        elif setting == "security":
+            self.config["AP"]["security"] = value
+            self._security = self.config["AP"]["security"]
+        elif setting == "passphrase":
+            self.config["AP"]["passphrase"] = value
+            self._passphrase = self.config["AP"]["passphrase"]
+        elif setting == "hostapd_executable":
+            self.config["AP"]["hostapd_executable"] = value
+        elif setting == "hostapd_config_file":
+            self.config["AP"]["hostapd_config_file"] = value
+        else:
+            raise exceptions.ConfigurationError(f"Invalid setting '{setting}'!")
+
+    def save_profile(self, name):
+        """ Store the current configuration as an APConfigurationProfile object
+        """
+        configuration_profile = APConfigurationProfile(name, config=self.config, logger=self.logger)
+        self.configuration_profiles.append(configuration_profiles)
+        return configuration_profile.name
+
+    def load_profile(self, name, start=False):
+        """ Load an AP configuration from an APConfigurationProfile object
+        """
+        profile_exists = False
+        for configuration_profile in self.configuration_profiles:
+            if configuration_profile.name == name:
+                profile_exists = True
+                self.config = configuration_profile.get_config()
+                configuration_profile.write_config()
+                break
+        if not profile_exists:
+            raise exceptions.ConfigurationError(f"Configuration profile named '{name}' does not exist!")
+        if start:
+            if self.state == "not running":
+                try:
+                    self._start_ap_host()
+                except Exception as err_msg:
+                    raise exception.StateChangeError(f"Failed to start AP host after loading configuration profile '{configuration_profile.name}'! Error message: {err_msg}")
+            else:
+                try:
+                    self._restart_ap_host()
+                except Exception as err_msg:
+                    raise exception.StateChangeError(f"Failed to restart AP host after loading configuration profile '{configuration_profile.name}'! Error message: {err_msg}")
+        return None
+
+
