@@ -9,7 +9,9 @@ DBus client for aphostd
 import os
 import sys
 import getopt
+from pydbus import SystemBus
 
+__project_repository__ = "https://github.com/newdaynewburner/ap-host"
 __aphostd_version__ = "0.1"
 __aphostctl_version__ = "0.1"
 
@@ -18,18 +20,24 @@ class DBusAPIClient(object):
     """ Client object for interacting with DBus API
     """
 
-    def __init__(self, debug=False):
+    def __init__(self, bus_name, object_path, debug=False):
         """ Initialize the object
         """
         self.debug = debug
+        self.bus = SystemBus()
+        self.api = self.bus.get(bus_name, object_path)
         if self.debug:
-            print(f"[DEBUG] Initialized DBusAPIClient object instance with debugging messages enabled")
+            print(f"[DEBUG] Connected to system bus '{bus_name}' at path '{object_path}'")
 
     def start(self):
         """ Call the Start endpoint
         """
         if self.debug:
             print(f"[DEBUG] Making API call to: Start (Arguments: )")
+        try:
+            self.api.Start()
+        except Exception as err_msg:
+            print(f"[ERROR] DBus error: {err_msg}")
         return None
 
     def stop(self):
@@ -37,6 +45,10 @@ class DBusAPIClient(object):
         """
         if self.debug:
             print(f"[DEBUG] Making API call to: Stop (Arguments: )")
+        try:
+            self.api.Stop()
+        except Exception as err_msg:
+            print(f"[ERROR] DBus error: {err_msg}")
         return None
 
     def restart(self):
@@ -44,6 +56,10 @@ class DBusAPIClient(object):
         """
         if self.debug:
             print(f"[DEBUG] Making API call to: Restart (Arguments: )")
+        try:
+            self.api.Restart()
+        except Exception as err_msg:
+            print(f"[ERROR] DBus error: {err_msg}")
         return None
 
     def configure(self, setting, value):
@@ -51,12 +67,20 @@ class DBusAPIClient(object):
         """
         if self.debug:
             print(f"[DEBUG] Making API call to: Configure (Arguments: {setting}, {value})")
+        try:
+            self.api.Configure(setting, value)
+        except Exception as err_msg:
+            print(f"[ERROR] DBus error: {err_msg}")
         return None
 
 def main(debug, operations):
     """ Main function. Core program logic
     """
-    client = DBusAPIClient(debug=debug)
+    client = DBusAPIClient(
+        "com.aphost.APHost",
+        "/com/aphost/APHost",
+        debug=debug
+    )
     for operation in operations:
         if debug:
             print(f"[DEBUG] Current operation: {operation}")
@@ -100,8 +124,9 @@ if __name__ == "__main__":
             sys.exit(0)
         elif opt in ("-v", "--version"):
             # Display the version message
-            print(f"aphostd version: {__aphostd_version__}")
+            print(f"aphostctl ({__project_repository__})")
             print(f"aphostctl version: {__aphostctl_version__}")
+            print(f"aphostd version: {__aphostd_version__}")
             sys.exit(0)
         elif opt in ("-d", "--debug"):
             # Enable debugging output

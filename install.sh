@@ -1,5 +1,13 @@
 #!/bin/sh
 
+#############################################################################################
+# install.sh                                                                                #
+#                                                                                           #
+# Installation script. Must be ran as root. Developed/tested on OpenSUSE Leap 15.6. Doesn't #
+# work on your distro? Open an issue and let me know what distribution you're using. Using  #
+# Windows? Not supported.                                                                   #
+#############################################################################################
+
 APP_NAME="aphostd"
 SOURCE_DIR="/usr/lib/rouge-access-point/components/${APP_NAME}"
 CONFIG_DIR="/etc/rouge-access-point/components/${APP_NAME}/config"
@@ -7,6 +15,7 @@ RSC_DIR="/etc/rouge-access-point/components/${APP_NAME}/rsc"
 SYSTEMD_UNIT_TARGET="/etc/systemd/system/${APP_NAME}.service"
 SECURITY_POLICY_TARGET="/usr/share/dbus-1/system.d/org.aphostd.APHost.conf"
 BIN_TARGET="/usr/bin/${APP_NAME}"
+CLIENT_TARGET="/usr/bin/aphostctl"
 
 # Make sure running as root
 if [[ "$EUID" -ne 0 ]]; then
@@ -31,9 +40,13 @@ exec /usr/bin/env python3 ${SOURCE_DIR}/aphostd.py "\$@"
 EOF
 chmod +x "${BIN_TARGET}"
 
+# Copy the client script
+cp aphostctl.py "${CLIENT_TARGET}"
+chmod +x "${CLIENT_TARGET}"
+
 # Move the configuration file
 echo "Copying configuration file..."
-cp config/aphostd.ini "${CONFIG_DIR}"
+cp config/ap-host.ini "${CONFIG_DIR}"
 
 # Set up the DBus interface
 echo "Copying DBus interface definition and security policy..."
