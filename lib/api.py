@@ -8,13 +8,15 @@ import os
 import sys
 import subprocess
 import threading
+import logging
+import configparser
 from pydbus import SystemBus
 from gi.repository import GLib
 from . import datatypes
 from . import exceptions
 
-BUS_NAME = "com.ap-host.APHost"
-OBJECT_PATH = "/com/ap-host/APHost"
+BUS_NAME = "com.aphost.APHost"
+OBJECT_PATH = "/com/aphost/APHost"
 INTERFACE_XML = """
 <node>
     <interface name="com.aphost.APHost">
@@ -25,15 +27,7 @@ INTERFACE_XML = """
             <arg type="s" name="setting" direction="in"/>
             <arg type="s" name="value" direction="in"/>
         </method>
-        <method name="SaveProfile"/>
-        <method name="LoadProfile"/>
         <property name="State" type="s" access="read"/>
-        <property name="Interface" type="s" access="read"/>
-        <property name="ESSID" type="s" access="read"/>
-        <property name="Band" type="s" access="read"/>
-        <property name="Channel" type="s" access="read"/>
-        <property name="Security" type="s" access="read"/>
-        <property name="Passphrase" type="s" access="read"/>
     </interface>
 </node>
 """
@@ -57,61 +51,42 @@ class APHostService(datatypes.APHost):
     def Start(self):
         """ Start the AP host
         """
-        self.logger.info(f"[AP Host] Got call on DBus API to Start")
+        self.logger.info(f"Got call on DBus API to Start")
         try:
             self.start()
         except exceptions.StateChangeError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encoutered a StateChangeError handling call to Start! Error message:  {err_msg}")
+            self.logger.error(f"DBus API encoutered a StateChangeError handling call to Start! Error message:  {err_msg}")
         return None
 
 
     def Stop(self):
         """ Stop the AP host
         """
-        self.logger.info(f"[AP Host] Got call on DBus API to Stop")
+        self.logger.info(f"Got call on DBus API to Stop")
         try:
             self.stop()
         except exceptions.StateChangeError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encoutered a StateChangeError handling call to Stop! Error message:  {err_msg}")
+            self.logger.error(f"DBus API encoutered a StateChangeError handling call to Stop! Error message:  {err_msg}")
         return None
 
     def Restart(self):
         """ Restart the AP host
         """
-        self.logger.info(f"[AP Host] Got call on DBus API to Restart")
+        self.logger.info(f"Got call on DBus API to Restart")
         try:
             self.restart()
         except exceptions.StateChangeError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encoutered a StateChangeError handling call to Restart! Error message:  {err_msg}")
+            self.logger.error(f"DBus API encoutered a StateChangeError handling call to Restart! Error message:  {err_msg}")
         return None
 
     def Configure(self, setting, value):
         """ Configure the AP host
         """
-        self.logger.info(f"[AP Host] Got call on DBus API to Configure with arguments: {setting}, {value}")
+        self.logger.info(f"Got call on DBus API to Configure with arguments: {setting}, {value}")
         try:
             self.configure(setting, value)
         except exceptions.ConfigurationError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encountered a ConfigurationError handling call to Configure! Error message: {err_msg}")
-        return None
-
-    def SaveProfile(self, name):
-        """ Save the current configuration as a profile
-        """
-        self.logger.info(f"[AP Host] Got call on DBus API to SaveProfile with arguments: {name}")
-        self.save_profile(name)
-        return None
-
-    def LoadProfile(self, name, start=False):
-        """ Load a configuration profile
-        """
-        self.logger.info(f"[AP Host] Got call on DBuS API to LoadProfile with arguments: {name}, {start}")
-        try:
-            self.load_profile(name, start=start)
-        except exceptions.ConfigurationError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encountered a ConfigurationError handling call to LoadProfile! Error message: {err_msg}")
-        except exceptions.StateChangeError as err_msg:
-            self.logger.error(f"[AP Host] DBus API encountered a StateChangeError handling call to LoadProfile! Error message: {err_nsg}")
+            self.logger.error(f"DBus API encountered a ConfigurationError handling call to Configure! Error message: {err_msg}")
         return None
 
     #######################
@@ -119,43 +94,13 @@ class APHostService(datatypes.APHost):
     #######################
     @property
     def State(self):
-        return self._state
+        return self.state
 
-    @property
-    def Interface(self):
-        return self.config["AP"]["interface"]
-
-    @property
-    def ESSID(self):
-        return self.config["AP"]["essid"]
-
-    @property
-    def Band(self):
-        return self.config["AP"]["band"]
-
-    @property
-    def Channel(self):
-        return self.config["AP"]["channel"]
-
-    @property
-    def Security(self):
-        return self.config["AP"]["security"]
-
-    @property
-    def Passphrase(self):
-        return self.config["AP"]["passphrase"]
-
-def init_dbus_api():
+def init_dbus_api(name=BUS_NAME, path=OBJECT_PATH, xml=INTERFACE_XML):
     """ Start the DBus API
     """
-    def _start_thread():
-        """ API runner thread
-        """
-        bus = SystemBus()
-        bus.publish(BUS_NAME, (OBJECT_PATH, APHostService, INTERFACE_XML))
-        GLib.MainLoop().run()
-
-    thread = threading.Thread(target=_start_thread, args=())
-    thread.start()
+    bus = SystemBus()
+    bus.publish(name, (path, APHostService(), xml))
+    GLib.MainLoop().run()
     return None
 
