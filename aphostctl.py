@@ -138,7 +138,7 @@ if __name__ == "__main__":
                 if args[args.index(arg) + 1] == "help":
                     print("Start the AP host")
                     print("USAGE:")
-                    print("\thostapctl start")
+                    print("\taphostctl start")
                     sys.exit(0)
             operations.append(("start", []))
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                 if args[args.index(arg) + 1] == "help":
                     print("Stop the AP host")
                     print("USAGE:")
-                    print("\thostapctl stop")
+                    print("\taphostctl stop")
             operations.append(("stop", []))
 
         elif arg == "restart":
@@ -155,7 +155,7 @@ if __name__ == "__main__":
                 if args[args.index(arg) + 1] == "help":
                     print("Restart the AP host")
                     print("USAGE:")
-                    print("\thostapctl restart")
+                    print("\taphostctl restart")
             operations.append(("restart", []))
 
         elif arg == "configure":
@@ -171,7 +171,7 @@ if __name__ == "__main__":
                 elif args[args.index(arg) + 1] in ("broadcast_iface", "driver", "essid", "band", "channel", "security", "passphrase", "hostapd_executable", "hostapd_config_file"):
                     operations.append(("configure", [args[args.index(arg) + 1], args[args.index(arg) + 2]]))
                 else:
-                    print(f"Invalid setting '{args[args.index(arg) + 1]}'! See 'hostapctl configure help' for a list of valid settings!")
+                    print(f"Invalid setting '{args[args.index(arg) + 1]}'! See 'aphostctl configure help' for a list of valid settings!")
                     sys.exit(1)
             else:
                 print("Error! Invalid usage! See -h or --help for usage information!")
