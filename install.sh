@@ -9,9 +9,9 @@
 #############################################################################################
 
 APP_NAME="aphostd"
-SOURCE_DIR="/usr/lib/rouge-access-point/components/${APP_NAME}"
-CONFIG_DIR="/etc/rouge-access-point/components/${APP_NAME}/config"
-RSC_DIR="/etc/rouge-access-point/components/${APP_NAME}/rsc"
+SOURCE_DIR="/usr/lib/rouge-access-point/components/ap-host"
+CONFIG_DIR="/etc/rouge-access-point/config/components/ap-host"
+RSC_DIR="/etc/rouge-access-point/rsc/components/ap-host"
 SYSTEMD_UNIT_TARGET="/etc/systemd/system/${APP_NAME}.service"
 SECURITY_POLICY_TARGET="/usr/share/dbus-1/system.d/org.aphostd.APHost.conf"
 BIN_TARGET="/usr/bin/${APP_NAME}"
@@ -36,7 +36,7 @@ cp -r aphostd.py lib/ "${SOURCE_DIR}/"
 echo "Creating launcher script..."
 cat > "${BIN_TARGET}" <<EOF
 #!/bin/sh
-exec /usr/bin/env python3 ${SOURCE_DIR}/aphostd.py "\$@"
+exec /usr/bin/env python3.11 ${SOURCE_DIR}/aphostd.py "\$@"
 EOF
 chmod +x "${BIN_TARGET}"
 
@@ -46,7 +46,7 @@ chmod +x "${CLIENT_TARGET}"
 
 # Move the configuration file
 echo "Copying configuration file..."
-cp config/ap-host.ini "${CONFIG_DIR}"
+cp config/aphostd.ini "${CONFIG_DIR}"
 
 # Set up the DBus interface
 echo "Copying DBus interface definition and security policy..."

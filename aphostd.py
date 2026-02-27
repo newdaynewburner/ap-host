@@ -38,7 +38,7 @@ if __name__ == "__main__":
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s - %(levelname)s - [AP Host] %(message)s",
-            logfile=log_file
+            filename=log_file
         )
     else:
         logging.basicConfig(
