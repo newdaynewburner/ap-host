@@ -3,10 +3,45 @@
         <method name="Start"/>
         <method name="Stop"/>
         <method name="Restart"/>
-        <method name="Configure">
-            <arg type="s" name="setting" direction="in"/>
-            <arg type="s" name="value" direction="in"/>
+        <method name="ApplyConfiguration"/>
+        <method name="GetStation">
+            <arg type="s" name="mac_address" direction="in"/>
+            <arg type="a{sv}" name="station_data" direction="out"/>
+        </method>
+        <method name="BlockStation">
+            <arg type="s" name="mac_address" direction="in"/>
+        </method>
+        <method name="UnblockStation">
+            <arg type="s" name="mac_address" direction="in"/>
+        </method>
+        <method name="DeauthenticateStation">
+            <arg type="s" name="mac_address" direction="in"/>
         </method>
         <property name="State" type="s" access="read"/>
+        <property name="Stations" type="l" access="read"/>
+        <property name="BlockedStations" type="l" access="read"/>
+        <property name="ESSID" type="s" access="readwrite"/>
+        <property name="Band" type="s" access="readwrite"/>
+        <property name="Channel" type="s" access="readwrite"/>
+        <property name="Security" type="s" access="readwrite"/>
+        <property name="Passphrase" type="s" access="readwrite"/>
+        <signal name="StateChanged">
+            <arg type="s" name="old_state"/>
+            <arg type="s" name="new_state"/>
+        </signal>
+        <signal name="ConfigurationChanged">
+            <arg type="s" name="property"/>
+            <arg type="s" name="old_value"/>
+            <arg type="s" name="new_value"/>
+        </signal>
+        <signal name="ConfigurationApplied">
+            <arg type="a{sv}" name="applied_config"/>
+        </signal>
+        <signal name="StationConnected">
+            <arg type="s" name="mac_address"/>
+        </signal>
+        <signal name="StationDisconnected">
+            <arg type="s" name="mac_address"/>
+        </signal>
     </interface>
 </node>
